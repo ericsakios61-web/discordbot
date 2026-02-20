@@ -31,13 +31,11 @@ client.once("ready", () => {
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  console.log(`Message received: ${message.content}`); // debug line
-
   // ===== Ticket Panel Command =====
   if (message.content === "!ticketpanel") {
     const embed = new EmbedBuilder()
       .setColor("Yellow")
-      .setThumbnail("https://media.discordapp.net/attachments/1246204157363355750/1474178544048275738/907DBC00-1FCE-40C2-BCD4-8F97393E3F5A.png?ex=69999001&is=69983e81&hm=294c6a1d4666bb86ab55443b6cabbe47525484616a8a3daeb61a802175357725&=&format=webp&quality=lossless&width=968&height=968.png")
+      .setThumbnail("https://media.discordapp.net/attachments/1246204157363355750/1474178544048275738/907DBC00-1FCE-40C2-BCD4-8F97393E3F5A.png")
       .setTitle("ꜱᴇʟᴀɴɪᴋ ᴀᴋʏᴋʟᴏꜰᴏʀʜᴛᴀ")
       .setDescription("`Πατήστε το κουμπί για να ανοίξετε ticket.`");
 
@@ -55,12 +53,12 @@ client.on("messageCreate", async (message) => {
   if (message.content === "!linkpanel") {
     const embed = new EmbedBuilder()
       .setColor("Yellow")
-      .setImage("https://media.discordapp.net/attachments/1246204157363355750/1474178544048275738/907DBC00-1FCE-40C2-BCD4-8F97393E3F5A.png?ex=69999001&is=69983e81&hm=294c6a1d4666bb86ab55443b6cabbe47525484616a8a3daeb61a802175357725&=&format=webp&quality=lossless&width=968&height=968.png")
+      .setImage("https://media.discordapp.net/attachments/1246204157363355750/1474178544048275738/907DBC00-1FCE-40C2-BCD4-8F97393E3F5A.png")
       .setTitle("ꜱᴇʟᴀɴɪᴋ ᴀᴋʏᴋʟᴏꜰᴏʀʜᴛᴀ ᴀᴘᴘʟɪᴄᴀᴛɪᴏɴꜱ")
       .setDescription("`Παρακάτω μπορείτε να επιλέξετε και να μπειτε στο Staff Team μας!`");
 
     const button = new ButtonBuilder()
-      .setLabel("📥")
+      .setLabel("📥 Apply Here")
       .setStyle(ButtonStyle.Link)
       .setURL("https://forms.gle/SH5DxwLjCzhqkQui6"); // <-- Replace with your URL
 
@@ -83,7 +81,7 @@ client.on("interactionCreate", async (interaction) => {
     if (existing) {
       return interaction.reply({
         content: "❌ You already have an open ticket.",
-        flags: MessageFlags.Ephemeral
+        ephemeral: true
       });
     }
 
@@ -91,38 +89,26 @@ client.on("interactionCreate", async (interaction) => {
       .setCustomId("select_reason")
       .setPlaceholder("Select ticket reason")
       .addOptions([
-        { label: "📞Support", value: "📞Support" },
-        { label: "📛Staff Complaint", value: "📛Staff Complaint" }
+        { label: "📞 Support", value: "Support" },
+        { label: "📛 Staff Complaint", value: "Staff Complaint" }
       ]);
 
     const row = new ActionRowBuilder().addComponents(menu);
 
-    interaction.reply({
+    await interaction.reply({
       content: "Select the reason:",
       components: [row],
-      flags: MessageFlags.Ephemeral
+      ephemeral: true
     });
   }
 
   // ===== CREATE TICKET =====
   if (interaction.isStringSelectMenu() && interaction.customId === "select_reason") {
-  await interaction.deferUpdate();  // <-- This tells Discord "I'm processing, no 'failed' popup"
-
-  // Then do your async ticket creation
-  const reason = interaction.values[0];
-
-  // ...rest of your code to create the ticket channel, send messages, etc.
-
-  // Finally you can edit the original ephemeral message or send a follow-up
-  interaction.followUp({
-    content: `✅ Ticket created: ${channel}`,
-    ephemeral: true
-  });
-}
+    await interaction.deferUpdate(); // Avoid "interaction failed"
 
     const reason = interaction.values[0];
 
-    // Count existing tickets in the category
+    // Count tickets
     const ticketChannels = interaction.guild.channels.cache.filter(
       c => c.parentId === config.categoryId && c.name.startsWith("ticket-")
     );
@@ -135,18 +121,9 @@ client.on("interactionCreate", async (interaction) => {
       parent: config.categoryId,
       topic: interaction.user.id,
       permissionOverwrites: [
-        {
-          id: interaction.guild.id,
-          deny: [PermissionsBitField.Flags.ViewChannel]
-        },
-        {
-          id: interaction.user.id,
-          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
-        },
-        {
-          id: config.staffRoleId,
-          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
-        }
+        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+        { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] },
+        { id: config.staffRoleId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
       ]
     });
 
@@ -171,23 +148,22 @@ client.on("interactionCreate", async (interaction) => {
 
     const row = new ActionRowBuilder().addComponents(claimBtn, closeBtn);
 
-    channel.send({
+    await channel.send({
       content: `<@&${config.staffRoleId}>`,
       embeds: [embed],
       components: [row]
     });
 
-    interaction.reply({
+    await interaction.followUp({
       content: `✅ Ticket created: ${channel}`,
-      flags: MessageFlags.Ephemeral
+      ephemeral: true
     });
   }
 
   // ===== CLAIM TICKET =====
   if (interaction.isButton() && interaction.customId === "claim_ticket") {
-
     if (!interaction.member.roles.cache.has(config.staffRoleId)) {
-      return interaction.reply({ content: "❌ Staff only.", flags: MessageFlags.Ephemeral });
+      return interaction.reply({ content: "❌ Staff only.", ephemeral: true });
     }
 
     const ticketEmbed = interaction.message.embeds[0];
@@ -196,40 +172,32 @@ client.on("interactionCreate", async (interaction) => {
 
     await interaction.message.edit({ embeds: [embed] });
 
-    // Lock other staff
-    await interaction.channel.permissionOverwrites.edit(config.staffRoleId, {
-      SendMessages: false
-    });
-    await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
-      SendMessages: true
-    });
+    await interaction.channel.permissionOverwrites.edit(config.staffRoleId, { SendMessages: false });
+    await interaction.channel.permissionOverwrites.edit(interaction.user.id, { SendMessages: true });
 
-    interaction.reply({ content: `👮 Ticket claimed by ${interaction.user}`, flags: MessageFlags.Ephemeral });
+    interaction.reply({ content: `👮 Ticket claimed by ${interaction.user}`, ephemeral: true });
   }
 
   // ===== CLOSE TICKET =====
   if (interaction.isButton() && interaction.customId === "close_ticket") {
-
     if (!interaction.member.roles.cache.has(config.staffRoleId)) {
-      return interaction.reply({ content: "❌ Staff only.", flags: MessageFlags.Ephemeral });
+      return interaction.reply({ content: "❌ Staff only.", ephemeral: true });
     }
 
-    await interaction.reply({ content: "📝 Creating transcript...", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "📝 Creating transcript...", ephemeral: true });
 
     const transcript = await transcripts.createTranscript(interaction.channel);
-
     const logChannel = interaction.guild.channels.cache.get(config.logChannelId);
 
-    await logChannel.send({
-      content: `📁 Ticket closed by ${interaction.user}`,
-      files: [transcript]
-    });
+    if (logChannel) {
+      await logChannel.send({
+        content: `📁 Ticket closed by ${interaction.user}`,
+        files: [transcript]
+      });
+    }
 
-    setTimeout(() => {
-      interaction.channel.delete();
-    }, 5000);
+    setTimeout(() => interaction.channel.delete(), 5000);
   }
-
 });
 
 client.login(config.token);
