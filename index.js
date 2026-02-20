@@ -106,6 +106,19 @@ client.on("interactionCreate", async (interaction) => {
 
   // ===== CREATE TICKET =====
   if (interaction.isStringSelectMenu() && interaction.customId === "select_reason") {
+  await interaction.deferUpdate();  // <-- This tells Discord "I'm processing, no 'failed' popup"
+
+  // Then do your async ticket creation
+  const reason = interaction.values[0];
+
+  // ...rest of your code to create the ticket channel, send messages, etc.
+
+  // Finally you can edit the original ephemeral message or send a follow-up
+  interaction.followUp({
+    content: `✅ Ticket created: ${channel}`,
+    ephemeral: true
+  });
+}
 
     const reason = interaction.values[0];
 
