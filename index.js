@@ -26,7 +26,17 @@ const client = new Client({
 client.once("ready", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
+client.once("ready", () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
 
+  // Set bot status
+  client.user.setPresence({
+    status: "online", // online, idle, dnd, invisible
+    activities: [
+      { name: "| SELANIK AKYKLOFORHTA", type: 2 } // 0 = Playing, 1 = Streaming, 2 = Listening, 3 = Watching
+    ]
+  });
+});
 // ================= MESSAGE COMMANDS =================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
