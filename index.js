@@ -33,7 +33,7 @@ client.once("ready", () => {
   client.user.setPresence({
     status: "online", // online, idle, dnd, invisible
     activities: [
-      { name: "| SELANIK AKYKLOFORHTA", type: 2 } // 0 = Playing, 1 = Streaming, 2 = Listening, 3 = Watching
+      { name: "| SELANIK AKYKLOFORHTA |", type: 2 } // 0 = Playing, 1 = Streaming, 2 = Listening, 3 = Watching
     ]
   });
 });
